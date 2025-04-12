@@ -41,6 +41,13 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
+app.post('/chat', (req, res) => {
+  const { message } = req.body;
+  res.json({ message: 'Message reçu' });
+});
+
+
+
 
 // démarre un serveur sur le port 4000
 app.listen(4000, () => {
