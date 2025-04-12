@@ -24,6 +24,7 @@ from langchain.chains import RetrievalQA
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_openai.embeddings import OpenAIEmbeddings as SemanticEmbeddings
 from langchain.utilities import SerpAPIWrapper
+from TranslateTable import process_file 
 
 # === 2. Load API key from .env ===
 load_dotenv()
@@ -61,6 +62,8 @@ def load_documents(directory: str) -> List[Document]:
         if ext in ['.ndjson', '.json']:
             print(f"Skipping unsupported file format: {file_path}")
             continue
+        if ext in ['.csv', '.xlsx']:
+            file_path = process_file(file_path)
         try:
             loader = UnstructuredFileLoader(file_path)
             loaded_docs = loader.load()
@@ -170,19 +173,20 @@ def ask_question(query: str, all_chunks: List[Document], llm: ChatOpenAI) -> Tup
     return result['result'], result['source_documents']
 
 # === 8. Main flow ===
-if __name__ == "__main__":
-    docs = load_documents("./data/submissions/florida")
+def run_rag_pipeline(directory: str = "./data/submissions/florida", question: str = ""):
+    docs = load_documents(directory)
     chunks = chunk_documents(docs)
     vectorstore, all_chunks = build_vectorstore(chunks)
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-4")
 
     while True:
-        question = input("\nAsk your reinsurance question (or type 'exit'): ")
         if question.lower() == 'exit':
             break
         answer, sources = ask_question(question, all_chunks, llm)
-        print("\nAnswer:\n", answer)
         if sources:
-            print("\nSources:")
             for doc in sources:
-                print(f"- {doc.metadata.get('source', 'unknown')} | Preview: {doc.page_content[:200]}...")
+                ret = f"- {doc.metadata.get('source', 'unknown')} | Preview: {doc.page_content[:200]}..."
+                return ret
+            
+
+print(run_rag_pipeline("./data/submissions/florida", "What is the contract's end date"))
