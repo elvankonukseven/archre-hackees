@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Link } from 'react-router-dom'
 import { useState } from 'react';
 import axios from 'axios';
@@ -33,31 +33,29 @@ function App() {
   };
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={
-          <div className="min-h-screen bg-background">
-            <nav className="p-4 border-b">
-              <Link to="/chat" className="text-primary hover:text-primary/80">Aller au Chat</Link>
-            </nav>
-            <div
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-8 border-2 border-dashed rounded-lg m-4"
-            >
-              <p className="text-lg">Drag & Drop tes fichiers ici</p>
-              <div className="mt-4">
-                {files.map((file, i) => (
-                  <div key={i} className="text-sm text-muted-foreground">{file.name}</div>
-                ))}
-              </div>
+    <Routes>
+      <Route path="/" element={
+        <div className="min-h-screen bg-background">
+          <nav className="p-4 border-b">
+            <Link to="/chat" className="text-primary hover:text-primary/80">Aller au Chat</Link>
+          </nav>
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-8 border-2 border-dashed rounded-lg m-4"
+          >
+            <p className="text-lg">Drag & Drop tes fichiers ici</p>
+            <div className="mt-4">
+              {files.map((file, i) => (
+                <div key={i} className="text-sm text-muted-foreground">{file.name}</div>
+              ))}
             </div>
           </div>
-        } />
-        <Route path="/chat" element={<ChatBot />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Routes>
-    </Router>
+        </div>
+      } />
+      <Route path="/chat" element={<ChatBot />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+    </Routes>
   );
 }
 

@@ -5,14 +5,13 @@ import './index.css'
 
 import App from './App.jsx'
 import Chat from './Chat.jsx'
-import Dashboard from './Dashboard.jsx'
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/download" element={<App />} />
+        <Route path="/" element={<App />} />
         <Route path="/chat" element={<Chat />} />
       </Routes>
     </BrowserRouter>
