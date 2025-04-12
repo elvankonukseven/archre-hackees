@@ -1,40 +1,50 @@
-# RAG system for reinsurance data exploration using OpenAI
-
-# === 0. Suppress Warnings ===
+# === 0. Suppress Warnings and Dev Noise ===
+import os
+import sys
 import warnings
+
+# Ignore all Python warnings
 warnings.filterwarnings("ignore")
 
+# Ignore LangChain-specific deprecation warnings
+try:
+    from langchain_core._api.deprecation import LangChainDeprecationWarning
+    warnings.simplefilter("ignore", LangChainDeprecationWarning)
+except ImportError:
+    pass
+
+# Redirect stderr to suppress any remaining outputs (fallback)
+class DevNull:
+    def write(self, msg): pass
+    def flush(self): pass
+
+sys.stderr = DevNull()
+
 # === 1. Imports ===
-import os
 import glob
 import json
 import re
-import sys
 import openai
 import faiss
-import numpy as np
 from typing import List, Tuple
 from dotenv import load_dotenv
-from langchain.document_loaders import UnstructuredFileLoader
+from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain.schema import Document
 from langchain_openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain_community.chat_models import ChatOpenAI
+from langchain_community.vectorstores import FAISS
+from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain_openai.embeddings import OpenAIEmbeddings as SemanticEmbeddings
-from langchain.utilities import SerpAPIWrapper
+from langchain_community.utilities import SerpAPIWrapper
 
-# === 2. Load API key from .env ===
+# === 2. Load API key ===
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 os.environ["SERPAPI_API_KEY"] = os.getenv("SERPAPI_API_KEY")
 if not openai.api_key:
-    raise ValueError("❌ OPENAI_API_KEY not found in .env file.")
-if not os.getenv("SERPAPI_API_KEY"):
-    print("⚠️ Warning: SERPAPI_API_KEY not found in .env file. Web search will not work.")
+    raise ValueError("OPENAI_API_KEY not found in .env file.")
 
-# === 3. Load and preprocess documents ===
+# === 3. Preprocessing ===
 def preprocess_contract(text: str) -> str:
     lines = text.splitlines()
     grouped_lines = []
@@ -53,13 +63,13 @@ def preprocess_contract(text: str) -> str:
         grouped_lines.append(current_line.strip())
     return "\n".join(grouped_lines).strip()
 
+# === 4. Load Documents ===
 def load_documents(directory: str) -> List[Document]:
     file_paths = glob.glob(os.path.join(directory, '*'))
     docs = []
     for file_path in file_paths:
         ext = os.path.splitext(file_path)[-1].lower()
         if ext in ['.ndjson', '.json']:
-            print(f"Skipping unsupported file format: {file_path}")
             continue
         try:
             loader = UnstructuredFileLoader(file_path)
@@ -68,36 +78,47 @@ def load_documents(directory: str) -> List[Document]:
                 doc.metadata["source"] = os.path.basename(file_path)
                 doc.page_content = preprocess_contract(doc.page_content)
             docs.extend(loaded_docs)
-        except Exception as e:
-            print(f"⚠️ Failed to load {file_path}: {e}")
+        except:
+            continue
     return docs
 
-# === 4. Semantic chunking ===
+# === 5. Semantic Chunking ===
 def chunk_documents(docs: List[Document]) -> List[Document]:
-    embedder = SemanticEmbeddings()
+    embedder = OpenAIEmbeddings()
     chunker = SemanticChunker(embeddings=embedder, breakpoint_threshold_type="percentile", breakpoint_threshold_amount=90)
     all_chunks = []
     for doc in docs:
         try:
             chunks = chunker.split_text(doc.page_content)
-            if not chunks:
-                raise ValueError("No semantic chunks returned")
             for chunk_text in chunks:
-                chunk_doc = Document(page_content=chunk_text, metadata=doc.metadata)
-                all_chunks.append(chunk_doc)
-        except Exception as e:
-            print(f"⚠️ Failed semantic chunking for {doc.metadata.get('source')}: {e}")
+                all_chunks.append(Document(page_content=chunk_text, metadata=doc.metadata))
+        except:
+            continue
     return all_chunks
 
-# === 5. Embed and store in FAISS ===
-def build_vectorstore(chunks: List[Document]) -> Tuple[FAISS, List[Document]]:
-    if not chunks:
-        raise ValueError("No chunks to index. Check if documents are loaded and chunked properly.")
-    embedding_model = OpenAIEmbeddings()
-    vectorstore = FAISS.from_documents(chunks, embedding_model)
+# === 6. Save/Load Cached Chunks ===
+def save_chunks(chunks: List[Document], filepath: str):
+    with open(filepath, 'w') as f:
+        json.dump([{"text": d.page_content, "metadata": d.metadata} for d in chunks], f)
+
+def load_chunks(filepath: str) -> List[Document]:
+    with open(filepath, 'r') as f:
+        data = json.load(f)
+        return [Document(page_content=item["text"], metadata=item["metadata"]) for item in data]
+
+def build_or_load_vectorstore(index_path="faiss_index", chunks_path="chunks.json", raw_dir="./data/submissions/florida") -> Tuple[FAISS, List[Document]]:
+    if os.path.exists(index_path) and os.path.exists(chunks_path):
+        vectorstore = FAISS.load_local(index_path, OpenAIEmbeddings(), allow_dangerous_deserialization=True)
+        chunks = load_chunks(chunks_path)
+    else:
+        docs = load_documents(raw_dir)
+        chunks = chunk_documents(docs)
+        vectorstore = FAISS.from_documents(chunks, OpenAIEmbeddings())
+        vectorstore.save_local(index_path)
+        save_chunks(chunks, chunks_path)
     return vectorstore, chunks
 
-# === 6. Set up the LLM + Retrieval QA chain ===
+# === 7. QA Chain ===
 def create_qa_chain(vectorstore: FAISS, llm: ChatOpenAI) -> RetrievalQA:
     return RetrievalQA.from_chain_type(
         llm=llm,
@@ -106,58 +127,39 @@ def create_qa_chain(vectorstore: FAISS, llm: ChatOpenAI) -> RetrievalQA:
         return_source_documents=True
     )
 
-# === 7. Ask questions with optional web search and memory ===
+# === 8. Ask Questions ===
 last_context = {"year": None, "contract_metadata": {}}
+
+def format_serp_results(results: List[dict]) -> str:
+    bullet_points = []
+    for result in results:
+        title = result.get("title")
+        link = result.get("link")
+        source = result.get("source")
+        #snippet = result.get("snippet", "(No summary available)")
+        bullet_points.append(f"- **{title}** ({source})\n  \n  - [Read more]({link})") #- {snippet}
+    return "\n\n".join(bullet_points)
 
 def ask_question(query: str, all_chunks: List[Document], llm: ChatOpenAI) -> Tuple[str, List[Document]]:
     global last_context
 
-    # Web search using prior context
     if "search web:" in query.lower():
         serp = SerpAPIWrapper()
-
-        # Load enriched contract metadata if available
-        year = last_context.get("year")
-        if year:
-            try:
-                with open(f"./data/submissions/florida/{year}_terms.json", "r") as f:
-                    metadata = json.load(f)
-                    last_context["contract_metadata"] = {
-                        "broker": metadata.get("brokerName"),
-                        "currency": metadata.get("currencyCode"),
-                        "cedant": metadata.get("cedantName"),
-                        "contract_type": metadata.get("contractType")
-                    }
-            except Exception as e:
-                print(f"⚠️ Could not load metadata for enriched search: {e}")
         search_text = query.lower().replace("search web:", "").strip()
+        response = serp.run(search_text)
 
-        meta = last_context.get("contract_metadata", {})
-        filters = []
-        # Broker intentionally excluded from enriched search
-        if meta.get("currency"): filters.append(f"intext:\"{meta['currency']}\"")
-        #if meta.get("cedant"): filters.append(f"intext:\"{meta['cedant']}\"")
-        #if meta.get("broker"): filters.append(f"intext:\"{meta['broker']}\"")
-        if meta.get("contract_type"): filters.append(f"intext:\"{meta['contract_type']}\"")
-        joined_filters = " ".join(filters)
-        combined_query = f"{search_text} {joined_filters} site:reuters.com OR site:cnbc.com"
-        print("🔍 Enriched Search Prompt:", combined_query)
-        combined_query = search_text
+        if isinstance(response, list):
+            formatted = format_serp_results(response)
+            return formatted, []
+        return str(response), []
 
-        print("🌍 Searching the web for:", combined_query)
-        response = serp.run(combined_query)
-        return response, []
-
-    # Detect contract year and filter chunks
     year_matches = re.findall(r"20\d{2}", query)
     filtered_docs = []
     if year_matches:
         last_context["year"] = year_matches[0]
-        print(f"🔎 Filtering chunks based on years in filename: {year_matches}")
         for year in year_matches:
             filtered_docs.extend([doc for doc in all_chunks if year in doc.metadata.get("source", "")])
         if not filtered_docs:
-            print("⚠️ No matching documents found. Proceeding with full index.")
             filtered_docs = all_chunks
     else:
         filtered_docs = all_chunks
@@ -165,24 +167,16 @@ def ask_question(query: str, all_chunks: List[Document], llm: ChatOpenAI) -> Tup
     vectorstore = FAISS.from_documents(filtered_docs, OpenAIEmbeddings())
     qa_chain = create_qa_chain(vectorstore, llm)
     result = qa_chain({"query": query})
-
-    
     return result['result'], result['source_documents']
 
-# === 8. Main flow ===
+# === 9. Main Program ===
 if __name__ == "__main__":
-    docs = load_documents("./data/submissions/florida")
-    chunks = chunk_documents(docs)
-    vectorstore, all_chunks = build_vectorstore(chunks)
+    vectorstore, all_chunks = build_or_load_vectorstore()
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-4")
 
     while True:
         question = input("\nAsk your reinsurance question (or type 'exit'): ")
         if question.lower() == 'exit':
             break
-        answer, sources = ask_question(question, all_chunks, llm)
+        answer, _ = ask_question(question, all_chunks, llm)
         print("\nAnswer:\n", answer)
-        if sources:
-            print("\nSources:")
-            for doc in sources:
-                print(f"- {doc.metadata.get('source', 'unknown')} | Preview: {doc.page_content[:200]}...")
