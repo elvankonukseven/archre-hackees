@@ -35,7 +35,13 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain_experimental.text_splitter import SemanticChunker
+
+from langchain_openai.embeddings import OpenAIEmbeddings as SemanticEmbeddings
+from langchain.utilities import SerpAPIWrapper
+from TranslateTable import process_file 
+
 from langchain_community.utilities import SerpAPIWrapper
+
 
 # === 2. Load API key ===
 load_dotenv()
@@ -71,6 +77,8 @@ def load_documents(directory: str) -> List[Document]:
         ext = os.path.splitext(file_path)[-1].lower()
         if ext in ['.ndjson', '.json']:
             continue
+        if ext in ['.csv', '.xlsx']:
+            file_path = process_file(file_path)
         try:
             loader = UnstructuredFileLoader(file_path)
             loaded_docs = loader.load()
@@ -169,14 +177,28 @@ def ask_question(query: str, all_chunks: List[Document], llm: ChatOpenAI) -> Tup
     result = qa_chain({"query": query})
     return result['result'], result['source_documents']
 
-# === 9. Main Program ===
-if __name__ == "__main__":
+
+
+def run_rag_pipeline(directory: str = "./data/submissions/florida", question: str = ""):
+   
     vectorstore, all_chunks = build_or_load_vectorstore()
+
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-4")
 
     while True:
-        question = input("\nAsk your reinsurance question (or type 'exit'): ")
         if question.lower() == 'exit':
             break
-        answer, _ = ask_question(question, all_chunks, llm)
-        print("\nAnswer:\n", answer)
+            
+        answer, sources = ask_question(question, all_chunks, llm)
+
+        result = f"{answer}\n\nSources:\n"
+        if sources:
+            for doc in sources:
+                result += f"- {doc.metadata.get('source', 'unknown')} | Preview: {doc.page_content[:200]}...\n"
+        else:
+            result += "No sources found.\n"
+    
+        return result
+
+
+print(run_rag_pipeline("./data/submissions/florida", "What is the contract's end date"))
