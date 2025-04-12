@@ -3,22 +3,6 @@ import os
 import sys
 import warnings
 
-# Ignore all Python warnings
-warnings.filterwarnings("ignore")
-
-# Ignore LangChain-specific deprecation warnings
-try:
-    from langchain_core._api.deprecation import LangChainDeprecationWarning
-    warnings.simplefilter("ignore", LangChainDeprecationWarning)
-except ImportError:
-    pass
-
-# Redirect stderr to suppress any remaining outputs (fallback)
-class DevNull:
-    def write(self, msg): pass
-    def flush(self): pass
-
-sys.stderr = DevNull()
 
 # === 1. Imports ===
 import glob
@@ -42,10 +26,15 @@ from TranslateTable import process_file
 
 from langchain_community.utilities import SerpAPIWrapper
 
+from openai import OpenAI
 
 # === 2. Load API key ===
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Set up OpenAI API key
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 os.environ["SERPAPI_API_KEY"] = os.getenv("SERPAPI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY not found in .env file.")
@@ -191,14 +180,57 @@ def run_rag_pipeline(directory: str = "./data/submissions/florida", question: st
             
         answer, sources = ask_question(question, all_chunks, llm)
 
-        result = f"{answer}\n\nSources:\n"
+        formatted_sources = f"Sources:\n"
         if sources:
             for doc in sources:
-                result += f"- {doc.metadata.get('source', 'unknown')} | Preview: {doc.page_content[:200]}...\n"
+                formatted_sources += f"- {doc.metadata.get('source', 'unknown')} | Preview: {doc.page_content[:200]}...\n" #NE PAS LAISSER EN PLEIN MILIEU DUN MOT
         else:
-            result += "No sources found.\n"
+            formatted_sources = ""
     
-        return result
+        return answer, formatted_sources
 
 
-print(run_rag_pipeline("./data/submissions/florida", "What is the contract's end date"))
+
+
+def run_rag_writeup():
+
+    year = "2024"
+
+    prompts =["Highlight the main clause-level differences between the 2023 and 2024 versions of the contracts. You are an expert underwriter at a reinsurance company. Given these differences between the contracts, give your insight on the implications of these changes.",
+              f"Given the specifics of the {year} reinsurance contract, what macroeconomic and geopolitical factors could present significant risks or opportunities for its renewal? Consider aspects such as inflation trends, interest rate shifts, natural catastrophe frequency, regulatory developments, and global economic outlook. Identify clauses relevant to these macros.",
+              f"Search web: legislations {year}",
+              f"Search web: inflation {year}",
+              f"Search web: interest rate {year}",
+              f"Search web: natural disaster {year}",
+              f"What regulatory legislative changes have been announced in {year} which could result in future losses being significantly different from historical losses?"
+              ]
+    answers = ""
+    sources = ""
+    for prompt in prompts:
+       tuple_answer_source = run_rag_pipeline(question=prompt)
+       answers += tuple_answer_source[0]
+       sources += tuple_answer_source[1]
+
+    
+    
+    special_prompt = f"You are a professional in reinsurance industry. You are very good at reading reports that contain insights from relevant cedent cases. Given the following insights for a case, make the report clearer and more coherent. It should look like a formal reinsurance report : {answers}" 
+
+   #print first version to compare
+    print(answers + "\n\n")
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": special_prompt}
+        ],
+        max_tokens=1000,
+        temperature=0.5
+    )
+
+    return response.choices[0].message.content.strip() + "\n" + sources
+
+
+
+
+
