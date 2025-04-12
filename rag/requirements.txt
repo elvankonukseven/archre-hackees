@@ -1,0 +1,12 @@
+openai
+faiss-cpu
+numpy
+python-dotenv
+langchain
+langchain-community
+langchain-openai
+langchain-experimental
+google-search-results
+unstructured
+unstructured[md,xlsx]
+
