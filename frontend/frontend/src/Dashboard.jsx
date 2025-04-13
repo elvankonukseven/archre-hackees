@@ -1,120 +1,275 @@
-import { useState } from "react"
-import { Link } from 'react-router-dom'
-import { Home, PlusCircle } from "lucide-react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function Dashboard() {
-  const [projects, setProjects] = useState([
+  // Exemple de données de projets, avec un "id" unique
+  const [projects] = useState([
     {
       id: 1,
-      title: "Projet Alpha",
-      description: "Plateforme de gestion de contenu",
+      title: 'Projet Alpha',
+      description: 'Plateforme de gestion de contenu',
       progress: 75,
-      lastUpdated: "Il y a 2 jours",
+      updated: 'il y a 2 jours',
     },
     {
       id: 2,
-      title: "Projet Beta",
+      title: 'Projet Beta',
       description: "Application d'analyse de données",
       progress: 45,
-      lastUpdated: "Il y a 5 jours",
+      updated: 'il y a 5 jours',
     },
     {
       id: 3,
-      title: "Projet Gamma",
-      description: "Système de gestion de la relation client",
+      title: 'Projet Gamma',
+      description: 'Système de gestion de la relation client',
       progress: 90,
-      lastUpdated: "Aujourd'hui",
+      updated: "Aujourd'hui",
     },
-  ])
+  ]);
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <div className="w-64 border-r flex flex-col">
-        <div className="p-4 border-b">
-          <h1 className="text-xl font-bold">B2B SaaS</h1>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            <li>
-              <Link to="#" className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-                <Home size={18} />
-                <span>Accueil</span>
-              </Link>
-            </li>
-            <li>
-              <Link to="#" className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-                <PlusCircle size={18} />
-                <span>Nouveau Projet</span>
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        {/* User Profile */}
-        <div className="p-4 border-t mt-auto">
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-              <AvatarFallback>UN</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-sm font-medium">Jean Dupont</p>
-              <p className="text-xs text-muted-foreground">jean@example.com</p>
-            </div>
+    <div style={styles.container}>
+      {/* Barre latérale */}
+      <div style={styles.sidebar}>
+        <h2 style={styles.logo}>B2B SaaS</h2>
+        <Link to="/" style={styles.menuItem}>Accueil</Link>
+        <Link to="/new-project" style={styles.menuItem}>+ Nouveau Projet</Link>
+        
+        <div style={styles.user}>
+          <div style={styles.avatar}></div>
+          <div>
+            <div style={styles.username}>Jean Dupont</div>
+            <div style={styles.email}>jean@example.com</div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-8 overflow-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold">Mes Projets</h2>
-          <p className="text-muted-foreground">Gérez vos projets existants ou créez-en un nouveau</p>
-        </div>
+      {/* Contenu principal */}
+      <div style={styles.content}>
+        <h1 style={styles.title}>Mes Projets</h1>
+        <p style={styles.subtitle}>Gérez vos projets existants ou créez-en un nouveau</p>
 
-        {/* Project Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Project Cards */}
+        <div style={styles.projectList}>
+          {/* Cartes pour les projets existants */}
           {projects.map((project) => (
-            <Card key={project.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle>{project.title}</CardTitle>
-                <CardDescription>{project.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progression</span>
-                    <span>{project.progress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: `${project.progress}%` }} />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <p className="text-xs text-muted-foreground">Mis à jour {project.lastUpdated}</p>
-              </CardFooter>
-            </Card>
+            <div key={project.id} style={styles.projectCard}>
+              <h2 style={styles.projectTitle}>{project.title}</h2>
+              <p style={styles.projectDescription}>{project.description}</p>
+              
+              {/* Barre de progression */}
+              <div style={styles.progressContainer}>
+                <div 
+                  style={{ 
+                    ...styles.progressBar, 
+                    width: `${project.progress}%`,
+                  }}
+                />
+              </div>
+              
+              {/* Date de mise à jour */}
+              <p style={styles.updated}>Mis à jour {project.updated}</p>
+              
+              {/* Lien pour accéder au Chat (pour chaque projet) */}
+              <Link to="/chat" style={styles.chatLink}>
+                Accéder au chat
+              </Link>
+
+              {/* Lien Uploader propre à chaque projet via son ID */}
+              <Link to={`/download/${project.id}`} style={styles.uploadLink}>
+                Uploader
+              </Link>
+            </div>
           ))}
 
-          {/* New Project Card */}
-          <Card className="border-dashed hover:shadow-md transition-shadow cursor-pointer flex flex-col items-center justify-center p-6">
-            <div className="flex flex-col items-center gap-2 text-center">
-              <div className="rounded-full bg-muted p-3">
-                <PlusCircle className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 className="font-medium">Nouveau Projet</h3>
-              <p className="text-sm text-muted-foreground">Cliquez pour créer un nouveau projet</p>
-            </div>
-          </Card>
+          {/* Carte "Nouveau Projet" (pas de chat ici) */}
+          <div style={styles.newProjectCard}>
+            <Link to="/new-project" style={styles.newProjectLink}>
+              <div style={styles.newProjectIcon}>＋</div>
+              <h3 style={styles.newProjectTitle}>Nouveau Projet</h3>
+              <p style={styles.newProjectText}>Cliquez pour créer un nouveau projet</p>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}
+
+/* Palette et styles inline */
+const brandColor = '#6C63FF'; // Violet corporate
+const backgroundColor = '#f9f9ff'; // Légèrement teinté
+const textColor = '#333';
+const borderColor = '#ddd';
+const darkerBrand = '#5348c7';
+
+const styles = {
+  /* Container principal */
+  container: {
+    display: 'flex',
+    minHeight: '100vh',
+    backgroundColor: backgroundColor,
+    fontFamily: 'Poppins, sans-serif',
+  },
+  /* Barre latérale */
+  sidebar: {
+    width: '220px',
+    backgroundColor: brandColor,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    padding: '20px',
+    color: '#fff',
+  },
+  logo: {
+    marginBottom: '20px',
+    fontSize: '20px',
+    fontWeight: 'bold',
+  },
+  menuItem: {
+    marginBottom: '10px',
+    textDecoration: 'none',
+    color: '#fff',
+    fontWeight: '500',
+  },
+  user: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginTop: 'auto',
+  },
+  avatar: {
+    width: '40px',
+    height: '40px',
+    backgroundColor: '#eee',
+    borderRadius: '50%',
+  },
+  username: {
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  email: {
+    fontSize: '12px',
+    color: '#e0e0e0',
+  },
+
+  /* Contenu principal */
+  content: {
+    flex: 1,
+    padding: '30px',
+  },
+  title: {
+    marginBottom: '10px',
+    color: textColor,
+    fontSize: '24px',
+    fontWeight: 'bold',
+  },
+  subtitle: {
+    marginBottom: '30px',
+    color: '#666',
+  },
+  projectList: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '20px',
+  },
+
+  /* Cartes de projet */
+  projectCard: {
+    width: '220px',
+    backgroundColor: '#fff',
+    padding: '15px',
+    borderRadius: '8px',
+    border: `1px solid ${borderColor}`,
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  projectTitle: {
+    margin: 0,
+    fontSize: '18px',
+    color: textColor,
+  },
+  projectDescription: {
+    color: '#555',
+  },
+  progressContainer: {
+    height: '8px',
+    backgroundColor: '#eee',
+    borderRadius: '4px',
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: darkerBrand,
+    borderRadius: '4px',
+    transition: 'width 0.3s ease',
+  },
+  updated: {
+    fontSize: '12px',
+    color: '#999',
+  },
+  
+  /* Lien vers Chat */
+  chatLink: {
+    marginTop: 'auto',
+    display: 'inline-block',
+    padding: '6px 12px',
+    backgroundColor: brandColor,
+    color: '#fff',
+    borderRadius: '4px',
+    textDecoration: 'none',
+    fontSize: '14px',
+    textAlign: 'center',
+  },
+  
+  /* Lien pour Uploader */
+  uploadLink: {
+    display: 'inline-block',
+    marginTop: '4px',
+    padding: '6px 12px',
+    backgroundColor: darkerBrand,
+    color: '#fff',
+    borderRadius: '4px',
+    textDecoration: 'none',
+    fontSize: '14px',
+    textAlign: 'center',
+  },
+
+  /* Nouvelle carte de projet */
+  newProjectCard: {
+    width: '220px',
+    backgroundColor: '#fff',
+    border: `2px dashed ${borderColor}`,
+    borderRadius: '8px',
+    padding: '15px',
+    textAlign: 'center',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  newProjectLink: {
+    textDecoration: 'none',
+    color: textColor,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  newProjectIcon: {
+    fontSize: '30px',
+    marginBottom: '10px',
+    color: brandColor,
+  },
+  newProjectTitle: {
+    margin: 0,
+    marginBottom: '5px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+  },
+  newProjectText: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#666',
+  },
+};

@@ -1,11 +1,12 @@
-import { Routes, Route } from 'react-router-dom';
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
 import axios from 'axios';
-import ChatBot from './Chat';
-import Dashboard from './Dashboard';
 
-function App() {
+// On réutilise un style "inline" similaire
+export default function App() {
+  // Récupère le projectId dans l'URL, ex: /download/3
+  const { projectId } = useParams();
+
   const [files, setFiles] = useState([]);
 
   const handleDrop = async (e) => {
@@ -18,14 +19,14 @@ function App() {
       formData.append('file', file);
 
       try {
-        console.log('Tentative d\'upload pour:', file.name);
-        console.log('FormData contenu:', formData.get('file'));
-        const response = await axios.post('http://localhost:4000/upload', formData, {
+        console.log(`Tentative d'upload pour: ${file.name}`);
+        // On envoie le fichier vers /download/:projectId sur le back-end
+        await axios.post(`http://localhost:4000/download/${projectId}`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-        console.log(`${file.name} uploadé !`);
+        console.log(`${file.name} uploadé pour le projet n°${projectId} !`);
       } catch (error) {
         console.error(`Erreur lors de l'upload de ${file.name}:`, error);
       }
@@ -33,30 +34,117 @@ function App() {
   };
 
   return (
-    <Routes>
-      <Route path="/" element={
-        <div className="min-h-screen bg-background">
-          <nav className="p-4 border-b">
-            <Link to="/chat" className="text-primary hover:text-primary/80">Aller au Chat</Link>
-          </nav>
-          <div
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-            className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-8 border-2 border-dashed rounded-lg m-4"
-          >
-            <p className="text-lg">Drag & Drop tes fichiers ici</p>
-            <div className="mt-4">
-              {files.map((file, i) => (
-                <div key={i} className="text-sm text-muted-foreground">{file.name}</div>
-              ))}
-            </div>
+    <div style={styles.container}>
+      {/* Barre latérale */}
+      <div style={styles.sidebar}>
+        <h2 style={styles.logo}>B2B SaaS</h2>
+        <Link to="/dashboard" style={styles.menuItem}>Dashboard</Link>
+        <Link to="/chat" style={styles.menuItem}>Chat</Link>
+        {/* 
+          Ici, le lien est “actif” sur /download/projectId, 
+          mais vous pouvez le modifier pour pointer vers un autre ID si nécessaire
+        */}
+        <Link to={`/download/${projectId}`} style={styles.menuItemActive}>
+          Uploader
+        </Link>
+      </div>
+
+      {/* Contenu principal */}
+      <div style={styles.content}>
+        <h1 style={styles.title}>Uploader des Fichiers</h1>
+        <p style={styles.subtitle}>Glissez &amp; Déposez vos fichiers ci-dessous ou cliquez pour en sélectionner</p>
+
+        <div
+          style={styles.dropZone}
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+        >
+          <p style={styles.dropZoneText}>Déposez vos fichiers ici</p>
+
+          <div style={styles.fileList}>
+            {files.map((file, i) => (
+              <div key={i} style={styles.fileItem}>{file.name}</div>
+            ))}
           </div>
         </div>
-      } />
-      <Route path="/chat" element={<ChatBot />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-    </Routes>
+      </div>
+    </div>
   );
 }
 
-export default App;
+/* Styles pour le composant App */
+const brandColor = '#6C63FF';
+const backgroundColor = '#f9f9ff';
+const borderColor = '#ddd';
+const textColor = '#333';
+
+const styles = {
+  container: {
+    display: 'flex',
+    minHeight: '100vh',
+    backgroundColor: backgroundColor,
+    fontFamily: 'Poppins, sans-serif',
+  },
+  sidebar: {
+    width: '220px',
+    backgroundColor: brandColor,
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '20px',
+  },
+  logo: {
+    color: '#fff',
+    marginBottom: '20px',
+    fontSize: '20px',
+    fontWeight: 'bold',
+  },
+  menuItem: {
+    marginBottom: '10px',
+    textDecoration: 'none',
+    color: '#fff',
+    fontWeight: '500',
+  },
+  menuItemActive: {
+    marginBottom: '10px',
+    textDecoration: 'none',
+    color: '#fff',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  content: {
+    flex: 1,
+    padding: '30px',
+  },
+  title: {
+    marginBottom: '10px',
+    color: textColor,
+    fontSize: '24px',
+    fontWeight: 'bold',
+  },
+  subtitle: {
+    marginBottom: '30px',
+    color: '#666',
+  },
+  dropZone: {
+    border: `2px dashed ${borderColor}`,
+    borderRadius: '8px',
+    padding: '40px 20px',
+    textAlign: 'center',
+    backgroundColor: '#fff',
+    cursor: 'pointer',
+    transition: 'background-color 0.3s ease',
+  },
+  dropZoneText: {
+    margin: 0,
+    fontSize: '16px',
+    color: '#666',
+  },
+  fileList: {
+    marginTop: '20px',
+  },
+  fileItem: {
+    fontSize: '14px',
+    color: '#444',
+    marginBottom: '5px',
+  },
+};
