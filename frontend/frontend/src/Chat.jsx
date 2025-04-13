@@ -14,8 +14,10 @@ export default function ChatBot() {
 
   // Simule la récupération d'un document/rapport
   const doAReport = async () => {
+    console.log("error0")
     try {
       const response = await fetch('http://localhost:4000/report');
+      console.log("error1");
       const data = await response.json();
       if (data.report) {
         setEditorContent(data.report);
@@ -40,6 +42,11 @@ export default function ChatBot() {
     const userMessage = input;
     setInput('');
 
+        // Log de la requête
+    const requestBody = { message: userMessage };
+    console.log('Envoi au serveur:', requestBody);
+    
+
     try {
       const response = await fetch('http://localhost:4000/chat', {
         method: 'POST',
@@ -49,7 +56,20 @@ export default function ChatBot() {
         body: JSON.stringify({ message: userMessage }),
       });
 
+            // Log de la réponse
+      console.log('Status:', response.status);
+      console.log('Headers:', response.headers);
+
+
       const data = await response.json();
+
+      console.log('Réponse du serveur:', data);
+
+      console.log('Structure de la réponse:', {
+        hasReply: 'reply' in data,
+        keys: Object.keys(data)
+      });
+
       if (data.reply) {
         setMessages((prev) => [...prev, { from: 'bot', text: data.reply }]);
       } else {
@@ -60,6 +80,10 @@ export default function ChatBot() {
       }
     } catch (error) {
       console.error('Erreur API :', error);
+      console.error('Erreur complète:', error);
+      console.error('Type d\'erreur:', error.name);
+      console.error('Message d\'erreur:', error.message);
+      
       setMessages((prev) => [
         ...prev,
         { from: 'bot', text: 'Oups, une erreur est survenue côté serveur.' },
