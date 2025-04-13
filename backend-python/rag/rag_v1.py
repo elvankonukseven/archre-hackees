@@ -103,7 +103,7 @@ def load_chunks(filepath: str) -> List[Document]:
         data = json.load(f)
         return [Document(page_content=item["text"], metadata=item["metadata"]) for item in data]
 
-def build_or_load_vectorstore(index_path="faiss_index", chunks_path="chunks.json", raw_dir="./data/submissions/florida") -> Tuple[FAISS, List[Document]]:
+def build_or_load_vectorstore(raw_dir, index_path="faiss_index", chunks_path="chunks.json") -> Tuple[FAISS, List[Document]]:
     if os.path.exists(index_path) and os.path.exists(chunks_path):
         vectorstore = FAISS.load_local(index_path, OpenAIEmbeddings(), allow_dangerous_deserialization=True)
         chunks = load_chunks(chunks_path)
@@ -168,9 +168,9 @@ def ask_question(query: str, all_chunks: List[Document], llm: ChatOpenAI) -> Tup
 
 
 
-def run_rag_pipeline(directory: str = "./data/submissions/florida", question: str = ""):
+def run_rag_pipeline(directory, question):
    
-    vectorstore, all_chunks = build_or_load_vectorstore()
+    vectorstore, all_chunks = build_or_load_vectorstore(raw_dir=directory)
 
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-4")
 
@@ -197,7 +197,7 @@ def run_rag_pipeline(directory: str = "./data/submissions/florida", question: st
 
 
 
-def run_rag_writeup():
+def run_rag_writeup(directory):
 
     year = "2024"
 
@@ -212,7 +212,7 @@ def run_rag_writeup():
     answers = ""
     sources = ""
     for prompt in prompts:
-       tuple_answer_source = run_rag_pipeline(question=prompt)
+       tuple_answer_source = run_rag_pipeline(directory, question=prompt)
        answers += tuple_answer_source[0]
        sources += tuple_answer_source[1]
 
