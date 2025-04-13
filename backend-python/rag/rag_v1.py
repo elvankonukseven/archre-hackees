@@ -22,7 +22,7 @@ from langchain_experimental.text_splitter import SemanticChunker
 
 from langchain_openai.embeddings import OpenAIEmbeddings as SemanticEmbeddings
 from langchain.utilities import SerpAPIWrapper
-from TranslateTable import process_file 
+from .TranslateTable import process_file 
 
 from langchain_community.utilities import SerpAPIWrapper
 
@@ -195,7 +195,6 @@ def run_rag_pipeline(directory: str = "./data/submissions/florida", question: st
     
         return answer, formatted_sources
 
-print(run_rag_pipeline(question="sum up the 2023 contract"))
 
 
 def run_rag_writeup():
@@ -221,8 +220,6 @@ def run_rag_writeup():
     
     special_prompt = f"You are a professional in reinsurance industry. You are very good at reading reports that contain insights from relevant cedent cases. Given the following insights for a case, make the report clearer and more coherent. It should look like a formal reinsurance report : {answers}" 
 
-   #print first version to compare
-    print(answers + "\n\n")
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
