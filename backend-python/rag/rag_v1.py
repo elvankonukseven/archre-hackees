@@ -22,11 +22,13 @@ from langchain_experimental.text_splitter import SemanticChunker
 
 from langchain_openai.embeddings import OpenAIEmbeddings as SemanticEmbeddings
 from langchain.utilities import SerpAPIWrapper
-from .TranslateTable import process_file 
+from TranslateTable import process_file 
 
 from langchain_community.utilities import SerpAPIWrapper
 
 from openai import OpenAI
+
+contract_years = []
 
 # === 2. Load API key ===
 load_dotenv()
@@ -103,7 +105,7 @@ def load_chunks(filepath: str) -> List[Document]:
         data = json.load(f)
         return [Document(page_content=item["text"], metadata=item["metadata"]) for item in data]
 
-def build_or_load_vectorstore(index_path="faiss_index", chunks_path="chunks.json", raw_dir="../../data/submissions/florida") -> Tuple[FAISS, List[Document]]:
+def build_or_load_vectorstore(raw_dir, index_path="faiss_index", chunks_path="chunks.json") -> Tuple[FAISS, List[Document]]:
     if os.path.exists(index_path) and os.path.exists(chunks_path):
         vectorstore = FAISS.load_local(index_path, OpenAIEmbeddings(), allow_dangerous_deserialization=True)
         chunks = load_chunks(chunks_path)
@@ -168,10 +170,9 @@ def ask_question(query: str, all_chunks: List[Document], llm: ChatOpenAI) -> Tup
 
 
 
-def run_rag_pipeline(directory: str = "./data/submissions/florida", question: str = ""):
+def run_rag_pipeline(directory, question):
    
-    vectorstore, all_chunks = build_or_load_vectorstore()
-    print("running")
+    vectorstore, all_chunks = build_or_load_vectorstore(raw_dir=directory)
 
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-4")
 
@@ -191,24 +192,45 @@ def run_rag_pipeline(directory: str = "./data/submissions/florida", question: st
         return answer, formatted_sources
 
 
+def extract_contract_years(directory: str) -> List[str]:
+    year_pattern = re.compile(r"(20\d{2})_(contract|wording)")
+    years_found = set()
+    for filename in os.listdir(directory):
+        match = year_pattern.match(filename)
+        if match:
+            years_found.add(match.group(1))
+    return sorted(years_found)
+
+def run_rag_writeup(directory):
+
+    global contract_years
+    contract_years = extract_contract_years(directory)
+
+    last_year = None
+    curr_year = None
+
+    if len(contract_years) == 1:
+        last_year = contract_years[0]
+    elif len(contract_years) >= 2:
+        last_year = contract_years[-2]
+        curr_year = contract_years[-1]
+
+    print(f"📄 Contract years detected: {contract_years}")
+    print(f"🕒 Last year: {last_year}, Current year: {curr_year}")
 
 
-def run_rag_writeup():
-
-    year = "2024"
-
-    prompts =["Highlight the main clause-level differences between the 2023 and 2024 versions of the contracts. You are an expert underwriter at a reinsurance company. Given these differences between the contracts, give your insight on the implications of these changes.",
-              f"Given the specifics of the {year} reinsurance contract, what macroeconomic and geopolitical factors could present significant risks or opportunities for its renewal? Consider aspects such as inflation trends, interest rate shifts, natural catastrophe frequency, regulatory developments, and global economic outlook. Identify clauses relevant to these macros.",
-              f"Search web: legislations {year}",
-              f"Search web: inflation {year}",
-              f"Search web: interest rate {year}",
-              f"Search web: natural disaster {year}",
-              f"What regulatory legislative changes have been announced in {year} which could result in future losses being significantly different from historical losses?"
+    prompts =[f"Highlight the main clause-level differences between the {last_year} and {curr_year} versions of the contracts. You are an expert underwriter at a reinsurance company. Given these differences between the contracts, give your insight on the implications of these changes.",
+              f"Given the specifics of the {last_year} reinsurance contract, what macroeconomic and geopolitical factors could present significant risks or opportunities for its renewal? Consider aspects such as inflation trends, interest rate shifts, natural catastrophe frequency, regulatory developments, and global economic outlook. Identify clauses relevant to these macros.",
+              f"Search web: legislations {last_year}",
+              f"Search web: inflation {last_year}",
+              f"Search web: interest rate {last_year}",
+              f"Search web: natural disaster {last_year}",
+              f"What regulatory legislative changes have been announced in {last_year} which could result in future losses being significantly different from historical losses?"
               ]
     answers = ""
     sources = ""
     for prompt in prompts:
-       tuple_answer_source = run_rag_pipeline(question=prompt)
+       tuple_answer_source = run_rag_pipeline(directory ,question=prompt)
        answers += tuple_answer_source[0]
        sources += tuple_answer_source[1]
 
@@ -216,6 +238,8 @@ def run_rag_writeup():
     
     special_prompt = f"You are a professional in reinsurance industry. You are very good at reading reports that contain insights from relevant cedent cases. Given the following insights for a case, make the report clearer and more coherent. It should look like a formal reinsurance report : {answers}" 
 
+   #print first version to compare
+    print(answers + "\n\n")
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -228,3 +252,9 @@ def run_rag_writeup():
     )
 
     return response.choices[0].message.content.strip() + "\n" + sources
+
+
+
+
+
+print(run_rag_writeup("/Users/inesbouchama/Desktop/archre-hackees/data/submissions/turkey"))
