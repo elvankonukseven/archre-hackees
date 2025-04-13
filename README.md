@@ -60,7 +60,7 @@ We created an AI-powered underwriting copilot that:
 
 ## Contributors
  
-- [Ines Bouchama]
-- [Elvan Konukseven]  
-- [Flavia Wallenhorst]
+- Ines Bouchama
+- Elvan Konukseven 
+- Flavia Wallenhorst
 
