@@ -22,7 +22,7 @@ from langchain_experimental.text_splitter import SemanticChunker
 
 from langchain_openai.embeddings import OpenAIEmbeddings as SemanticEmbeddings
 from langchain.utilities import SerpAPIWrapper
-from .TranslateTable import process_file 
+from TranslateTable import process_file 
 
 from langchain_community.utilities import SerpAPIWrapper
 
@@ -103,7 +103,7 @@ def load_chunks(filepath: str) -> List[Document]:
         data = json.load(f)
         return [Document(page_content=item["text"], metadata=item["metadata"]) for item in data]
 
-def build_or_load_vectorstore(index_path="faiss_index", chunks_path="chunks.json", raw_dir="../../data/submissions/florida") -> Tuple[FAISS, List[Document]]:
+def build_or_load_vectorstore(index_path="faiss_index", chunks_path="chunks.json", raw_dir="./data/submissions/florida") -> Tuple[FAISS, List[Document]]:
     if os.path.exists(index_path) and os.path.exists(chunks_path):
         vectorstore = FAISS.load_local(index_path, OpenAIEmbeddings(), allow_dangerous_deserialization=True)
         chunks = load_chunks(chunks_path)
@@ -171,7 +171,6 @@ def ask_question(query: str, all_chunks: List[Document], llm: ChatOpenAI) -> Tup
 def run_rag_pipeline(directory: str = "./data/submissions/florida", question: str = ""):
    
     vectorstore, all_chunks = build_or_load_vectorstore()
-    print("running")
 
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-4")
 
@@ -184,13 +183,19 @@ def run_rag_pipeline(directory: str = "./data/submissions/florida", question: st
         formatted_sources = f"Sources:\n"
         if sources:
             for doc in sources:
-                formatted_sources += f"- {doc.metadata.get('source', 'unknown')} | Preview: {doc.page_content[:200]}...\n" #NE PAS LAISSER EN PLEIN MILIEU DUN MOT
+                preview = doc.page_content[:200]  
+                if len(doc.page_content) > 200:  
+                    last_space = preview.rfind(" ")  
+                    if last_space != -1:  
+                        preview = preview[:last_space]
+                    preview += "..."  
+                formatted_sources += f"- {doc.metadata.get('source', 'unknown')} | Preview: {preview}\n"
         else:
             formatted_sources = ""
     
         return answer, formatted_sources
 
-
+print(run_rag_pipeline(question="sum up the 2023 contract"))
 
 
 def run_rag_writeup():
@@ -216,6 +221,8 @@ def run_rag_writeup():
     
     special_prompt = f"You are a professional in reinsurance industry. You are very good at reading reports that contain insights from relevant cedent cases. Given the following insights for a case, make the report clearer and more coherent. It should look like a formal reinsurance report : {answers}" 
 
+   #print first version to compare
+    print(answers + "\n\n")
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
