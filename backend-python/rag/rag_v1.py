@@ -185,7 +185,13 @@ def run_rag_pipeline(directory, question):
         formatted_sources = f"Sources:\n"
         if sources:
             for doc in sources:
-                formatted_sources += f"- {doc.metadata.get('source', 'unknown')} | Preview: {doc.page_content[:200]}...\n" #NE PAS LAISSER EN PLEIN MILIEU DUN MOT
+                preview = doc.page_content[:200]  
+                if len(doc.page_content) > 200:  
+                    last_space = preview.rfind(" ")  
+                    if last_space != -1:  
+                        preview = preview[:last_space]
+                    preview += "..."  
+                formatted_sources += f"- {doc.metadata.get('source', 'unknown')} | Preview: {preview}\n"
         else:
             formatted_sources = ""
     
@@ -206,6 +212,7 @@ def run_rag_writeup(directory):
     global contract_years
     contract_years = extract_contract_years(directory)
 
+
     last_year = None
     curr_year = None
 
@@ -214,6 +221,7 @@ def run_rag_writeup(directory):
     elif len(contract_years) >= 2:
         last_year = contract_years[-2]
         curr_year = contract_years[-1]
+
 
     print(f"📄 Contract years detected: {contract_years}")
     print(f"🕒 Last year: {last_year}, Current year: {curr_year}")
@@ -230,7 +238,9 @@ def run_rag_writeup(directory):
     answers = ""
     sources = ""
     for prompt in prompts:
+
        tuple_answer_source = run_rag_pipeline(directory ,question=prompt)
+
        answers += tuple_answer_source[0]
        sources += tuple_answer_source[1]
 
@@ -253,8 +263,3 @@ def run_rag_writeup(directory):
 
     return response.choices[0].message.content.strip() + "\n" + sources
 
-
-
-
-
-print(run_rag_writeup("/Users/inesbouchama/Desktop/archre-hackees/data/submissions/turkey"))
