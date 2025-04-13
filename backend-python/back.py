@@ -52,8 +52,8 @@ def upload_file():
         return jsonify({'error': 'Erreur upload S3'}), 500
 
 # Route message simple
-@app.route('/chat', methods=['POST'])
-def chat():
+@app.route('/chat/<folderName>', methods=['POST'])
+def chat(folderName):
     data = request.get_json()
     message = data.get('message')
 
@@ -63,7 +63,7 @@ def chat():
     try:
         print(f"Message reçu du front : {message}")
 
-        response = run_rag_pipeline("/Users/flaviawallenhorst/Desktop/dev/reassurance/archre-hackees/data/submissions/florida", message)
+        response = run_rag_pipeline(f"/Users/flaviawallenhorst/Desktop/dev/reassurance/archre-hackees/data/submissions/{folderName}", message)
 
         print(f"Réponse générée : {response}")
 
@@ -73,10 +73,10 @@ def chat():
         print("Erreur dans /chat :", e)  # Très important
         return jsonify({'error': 'Erreur côté backend'}), 500
 
-@app.route('/report', methods=['GET'])
-def generate_report():
+@app.route('/report/<folderName>', methods=['GET'])
+def generate_report(folderName):
     try:
-        report_content = run_rag_writeup()
+        report_content = run_rag_writeup(f"/Users/flaviawallenhorst/Desktop/dev/reassurance/archre-hackees/data/submissions/{folderName}")
         return jsonify({'report': report_content}), 200
     except Exception as e:
         print("Erreur dans /report :", e)

@@ -22,7 +22,7 @@ from langchain_experimental.text_splitter import SemanticChunker
 
 from langchain_openai.embeddings import OpenAIEmbeddings as SemanticEmbeddings
 from langchain.utilities import SerpAPIWrapper
-from TranslateTable import process_file 
+from .TranslateTable import process_file 
 
 from langchain_community.utilities import SerpAPIWrapper
 

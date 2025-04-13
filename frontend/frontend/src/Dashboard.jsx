@@ -6,6 +6,7 @@ export default function Dashboard() {
   const [projects] = useState([
     {
       id: 1,
+      folderName: 'florida',
       title: 'Florida',
       description: 'Super Insurrance Company',
       progress: 75,
@@ -13,6 +14,7 @@ export default function Dashboard() {
     },
     {
       id: 2,
+      folderName: 'netherlands',
       title: 'Netherlands',
       description: "Super Boring Insurance Company",
       progress: 45,
@@ -20,6 +22,7 @@ export default function Dashboard() {
     },
     {
       id: 3,
+      folderName: 'turkey',
       title: 'Turkey',
       description: 'Amazing Insurance Company',
       progress: 90,
@@ -70,7 +73,7 @@ export default function Dashboard() {
               <p style={styles.updated}>Last update:{project.updated}</p>
               
               {/* Lien pour accéder au Chat (pour chaque projet) */}
-              <Link to="/chat" style={styles.chatLink}>
+              <Link to="/chat" style={styles.chatLink} state={{ folderName: project.folderName }}>
                 Copilot writing
               </Link>
 
