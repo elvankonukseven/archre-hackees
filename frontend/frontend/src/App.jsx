@@ -51,15 +51,15 @@ export default function App() {
 
       {/* Contenu principal */}
       <div style={styles.content}>
-        <h1 style={styles.title}>Uploader des Fichiers</h1>
-        <p style={styles.subtitle}>Glissez &amp; Déposez vos fichiers ci-dessous ou cliquez pour en sélectionner</p>
+        <h1 style={styles.title}>Project's files</h1>
+        <p style={styles.subtitle}>Add documents to your project's knowledge base</p>
 
         <div
           style={styles.dropZone}
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
         >
-          <p style={styles.dropZoneText}>Déposez vos fichiers ici</p>
+          <p style={styles.dropZoneText}>Drop your files here</p>
 
           <div style={styles.fileList}>
             {files.map((file, i) => (

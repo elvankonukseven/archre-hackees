@@ -4,7 +4,7 @@ import axios from 'axios';
 
 export default function ChatBot() {
   const [messages, setMessages] = useState([
-    { from: 'bot', text: 'Bonjour, comment puis-je vous aider aujourd\'hui ?' },
+    { from: 'bot', text: 'Hi, what are you looking for?' },
   ]);
   const [input, setInput] = useState('');
   const [editorContent, setEditorContent] = useState('');
@@ -125,19 +125,19 @@ export default function ChatBot() {
     <div style={styles.container}>
       {/* Barre latérale */}
       <div style={styles.sidebar}>
-        <h2 style={styles.logo}>B2B SaaS</h2>
-        <Link to="/" style={styles.menuItem}>Accueil</Link>
-        <Link to="/editor" style={styles.menuItem}>Éditeur</Link>
+        <h2 style={styles.logo}>Hackee</h2>
+        <Link to="/" style={styles.menuItem}>Home</Link>
+        <Link to="/editor" style={styles.menuItem}></Link>
       </div>
 
       {/* Contenu principal */}
       <div style={styles.content}>
         {/* Éditeur */}
         <div style={styles.editorContainer}>
-          <h3 style={styles.editorTitle}>Éditeur de Document</h3>
+          <h3 style={styles.editorTitle}>Editor</h3>
           <textarea
             style={styles.textarea}
-            placeholder="Commencez à écrire ici..."
+            placeholder="Interact with your document here"
             value={editorContent}
             onChange={(e) => setEditorContent(e.target.value)}
           />
@@ -145,7 +145,7 @@ export default function ChatBot() {
 
         {/* Chat */}
         <div style={styles.chatContainer}>
-          <h3 style={styles.chatTitle}>ChatBot</h3>
+          <h3 style={styles.chatTitle}>Hackee Copilot</h3>
           <div style={styles.messages}>
             {messages.map((msg, idx) => (
               <div

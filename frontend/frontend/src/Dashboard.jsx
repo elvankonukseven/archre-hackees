@@ -6,24 +6,24 @@ export default function Dashboard() {
   const [projects] = useState([
     {
       id: 1,
-      title: 'Projet Alpha',
-      description: 'Plateforme de gestion de contenu',
+      title: 'Florida',
+      description: 'Super Insurrance Company',
       progress: 75,
-      updated: 'il y a 2 jours',
+      updated: '2 days ago',
     },
     {
       id: 2,
-      title: 'Projet Beta',
-      description: "Application d'analyse de données",
+      title: 'Netherlands',
+      description: "Super Boring Insurance Company",
       progress: 45,
-      updated: 'il y a 5 jours',
+      updated: '5 days ago',
     },
     {
       id: 3,
-      title: 'Projet Gamma',
-      description: 'Système de gestion de la relation client',
+      title: 'Turkey',
+      description: 'Amazing Insurance Company',
       progress: 90,
-      updated: "Aujourd'hui",
+      updated: "Today",
     },
   ]);
 
@@ -31,23 +31,23 @@ export default function Dashboard() {
     <div style={styles.container}>
       {/* Barre latérale */}
       <div style={styles.sidebar}>
-        <h2 style={styles.logo}>B2B SaaS</h2>
-        <Link to="/" style={styles.menuItem}>Accueil</Link>
-        <Link to="/new-project" style={styles.menuItem}>+ Nouveau Projet</Link>
+        <h2 style={styles.logo}>Hackee</h2>
+        <Link to="/" style={styles.menuItem}>Home</Link>
+        <Link to="/new-project" style={styles.menuItem}>+ New Projet</Link>
         
         <div style={styles.user}>
           <div style={styles.avatar}></div>
           <div>
-            <div style={styles.username}>Jean Dupont</div>
-            <div style={styles.email}>jean@example.com</div>
+            <div style={styles.username}>Future intern @ArchRe</div>
+            <div style={styles.email}>founders@hackees.com</div>
           </div>
         </div>
       </div>
 
       {/* Contenu principal */}
       <div style={styles.content}>
-        <h1 style={styles.title}>Mes Projets</h1>
-        <p style={styles.subtitle}>Gérez vos projets existants ou créez-en un nouveau</p>
+        <h1 style={styles.title}>My Projets</h1>
+        <p style={styles.subtitle}>Manage your existing projects or create a new one</p>
 
         <div style={styles.projectList}>
           {/* Cartes pour les projets existants */}
@@ -67,16 +67,16 @@ export default function Dashboard() {
               </div>
               
               {/* Date de mise à jour */}
-              <p style={styles.updated}>Mis à jour {project.updated}</p>
+              <p style={styles.updated}>Last update:{project.updated}</p>
               
               {/* Lien pour accéder au Chat (pour chaque projet) */}
               <Link to="/chat" style={styles.chatLink}>
-                Accéder au chat
+                Copilot writing
               </Link>
 
               {/* Lien Uploader propre à chaque projet via son ID */}
               <Link to={`/download/${project.id}`} style={styles.uploadLink}>
-                Uploader
+                Upload new files
               </Link>
             </div>
           ))}
@@ -85,8 +85,8 @@ export default function Dashboard() {
           <div style={styles.newProjectCard}>
             <Link to="/new-project" style={styles.newProjectLink}>
               <div style={styles.newProjectIcon}>＋</div>
-              <h3 style={styles.newProjectTitle}>Nouveau Projet</h3>
-              <p style={styles.newProjectText}>Cliquez pour créer un nouveau projet</p>
+              <h3 style={styles.newProjectTitle}>New Project</h3>
+              <p style={styles.newProjectText}>Start a new project</p>
             </Link>
           </div>
         </div>
