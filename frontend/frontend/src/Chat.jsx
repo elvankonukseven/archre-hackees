@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+
 import axios from 'axios';
 
 export default function ChatBot() {
+  const location = useLocation();  // <-- Ici c'est bon !
+  const { folderName } = location.state || {};
   const [messages, setMessages] = useState([
     { from: 'bot', text: 'Hi, what are you looking for?' },
   ]);
@@ -16,7 +20,7 @@ export default function ChatBot() {
   const doAReport = async () => {
     console.log("error0")
     try {
-      const response = await fetch('http://localhost:4000/report');
+      const response = await fetch(`http://localhost:4000/report/${folderName}`);
       console.log("error1");
       const data = await response.json();
       if (data.report) {
@@ -48,7 +52,7 @@ export default function ChatBot() {
     
 
     try {
-      const response = await fetch('http://localhost:4000/chat', {
+      const response = await fetch(`http://localhost:4000/chat/${folderName}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
