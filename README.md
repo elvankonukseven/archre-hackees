@@ -1,5 +1,7 @@
 # AI-Powered Writeups for Next-Gen Underwriting
 
+[Demo](https://www.canva.com/design/DAGkgZv7d5Y/DD4TJT9KPs5vIicwiZmmGA/watch)
+
 ## Overview
 
 This project was built during the **Arch Re Hackathon** to support underwriters in streamlining the creation of reinsurance writeups. It combines document analysis, macroeconomic context, and industry data into a single assistant designed to reduce manual effort and improve underwriting quality.
